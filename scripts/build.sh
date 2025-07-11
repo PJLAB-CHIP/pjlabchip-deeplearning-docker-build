@@ -14,7 +14,7 @@ if [[ "${INSTALL_TORCH}" == "true" ]]; then
     IMAGE_TAG="${IMAGE_TAG}-torch${TORCH_VERSION}"
 fi
 
-IMAGE_NAME=jamesnulliu/deeplearning:${IMAGE_TAG}
+IMAGE_NAME=pjlabchip/deeplearning:${IMAGE_TAG}
 
 docker build \
     -f $DOCKER_FILE \
