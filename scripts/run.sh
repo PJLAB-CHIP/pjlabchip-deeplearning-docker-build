@@ -1,7 +1,5 @@
 #!/bin/bash
-
 set -e
-
 
 IMAGE_NAME=""
 CONTAINER_NAME="tmp"
@@ -19,9 +17,9 @@ function print_help() {
 
 while [[ $# -gt 0 ]]; do
     case $1 in
-        -I|--image-name)
+        -i|--image-name)
             IMAGE_NAME="$2"; shift ;;
-        -C|--container-name)
+        -c|--container-name)
             CONTAINER_NAME="$2"; shift ;;
         --tmp)
             TMP="true" ;;

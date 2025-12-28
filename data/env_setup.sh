@@ -15,7 +15,12 @@ License:     MIT
 ===============================================================================
 EOF
 
-echo "[ENV-SETUP] Sourcing \${ENV_SETUP_FILE}: ${ENV_SETUP_FILE}"
+FILE_DIR="$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
+FILE_NAME="$( basename -- "${BASH_SOURCE[0]}" )"
+FILE_PATH="$FILE_DIR/$FILE_NAME"
+
+echo "[ENV-SETUP] Sourcing ${FILE_PATH}"
+echo "            \${ENV_SETUP_FILE}: ${ENV_SETUP_FILE:-<not set>}"
 
 # @brief Add `$1` into environment variable `$2` if it is not already there.
 # @example > env_load PATH /usr/local/bin
