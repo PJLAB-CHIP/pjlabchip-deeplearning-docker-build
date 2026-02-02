@@ -70,8 +70,8 @@ RUN curl https://sh.rustup.rs -sSf | sh -s -- -y
 # Config files
 COPY data/vimrc.local /etc/vim/vimrc.local
 COPY data/env_setup.sh ${ENV_SETUP_FILE}
-COPY data/.inputrc data/.bashrc data/.tmux.conf /root/
-COPY data/.inputrc data/.bashrc data/.tmux.conf /etc/skel/
+COPY data/.inputrc data/.bashrc data/.tmux.conf data/.bash_profile /root/
+COPY data/.inputrc data/.bashrc data/.tmux.conf data/.bash_profile /etc/skel/
 
 # Install uv
 RUN curl -LsSf https://astral.sh/uv/install.sh | \

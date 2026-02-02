@@ -20,7 +20,11 @@ FILE_NAME="$( basename -- "${BASH_SOURCE[0]}" )"
 FILE_PATH="$FILE_DIR/$FILE_NAME"
 
 echo "[ENV-SETUP] Sourcing ${FILE_PATH}"
-echo "            \${ENV_SETUP_FILE}: ${ENV_SETUP_FILE:-<not set>}"
+echo "            Current \${ENV_SETUP_FILE}: ${ENV_SETUP_FILE:-<not set>}"
+
+export LANG=en_US.UTF-8
+export LC_ALL=en_US.UTF-8
+echo "[ENV-SETUP] Setting LANG to ${LANG}, LC_ALL to ${LC_ALL}"
 
 # @brief Add `$1` into environment variable `$2` if it is not already there.
 # @example > env_load PATH /usr/local/bin

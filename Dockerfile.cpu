@@ -6,6 +6,7 @@ FROM ubuntu:${UBUNTU_VERSION}
 ARG DEBIAN_FRONTEND=noninteractive
 ENV LANGUAGE=en_US.UTF-8
 ENV LANG=en_US.UTF-8
+ENV LC_ALL=en_US.UTF-8
 
 ARG INSTALL_TORCH
 ARG LLVM_VERSION
@@ -70,8 +71,8 @@ RUN curl https://sh.rustup.rs -sSf | sh -s -- -y
 # Config files
 COPY data/vimrc.local /etc/vim/vimrc.local
 COPY data/env_setup.sh ${ENV_SETUP_FILE}
-COPY data/.inputrc data/.bashrc data/.tmux.conf /root/
-COPY data/.inputrc data/.bashrc data/.tmux.conf /etc/skel/
+COPY data/.inputrc data/.bashrc data/.bash_profile data/.tmux.conf /root/
+COPY data/.inputrc data/.bashrc data/.bash_profile data/.tmux.conf /etc/skel/
 
 # Install uv
 RUN curl -LsSf https://astral.sh/uv/install.sh | \
