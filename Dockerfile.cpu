@@ -30,7 +30,7 @@ SHELL ["/bin/bash", "-c"]
 RUN apt-get update && apt-get upgrade -y && \
     apt-get install -y \
     apt-utils lsb-release software-properties-common gnupg git acl sed\
-    vim-gtk3 wget p7zip-full ninja-build curl jq pkg-config ssh ccache \
+    vim-gtk3 wget p7zip-full ninja-build curl jq nodejs npm pkg-config ssh ccache \
     build-essential gdb htop tmux kmod \
     libssl-dev && \
     echo "ttf-mscorefonts-installer msttcorefonts/accepted-mscorefonts-eula select true" \
@@ -67,6 +67,10 @@ RUN wget -O /tmp/llvm.sh https://apt.llvm.org/llvm.sh && \
 
 # Install Rust
 RUN curl https://sh.rustup.rs -sSf | sh -s -- -y
+
+# Install AI coding CLIs
+RUN npm install -g @openai/codex @anthropic-ai/claude-code \
+    && npm cache clean --force
 
 # Config files
 COPY data/vimrc.local /etc/vim/vimrc.local
