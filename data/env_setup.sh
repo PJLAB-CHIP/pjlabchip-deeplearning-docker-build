@@ -22,10 +22,6 @@ FILE_PATH="$FILE_DIR/$FILE_NAME"
 echo "[ENV-SETUP] Sourcing ${FILE_PATH}"
 echo "            Current \${ENV_SETUP_FILE}: ${ENV_SETUP_FILE:-<not set>}"
 
-export LANG=en_US.UTF-8
-export LC_ALL=en_US.UTF-8
-echo "[ENV-SETUP] Setting LANG to ${LANG}, LC_ALL to ${LC_ALL}"
-
 # @brief Add `$1` into environment variable `$2` if it is not already there.
 # @example > env_load PATH /usr/local/bin
 env_load() {
@@ -50,6 +46,12 @@ env_unload() {
     done
     export $var_name=$(IFS=:; echo "${new_paths[*]}")
 }
+
+# Time zone:
+#   To set a default time zone for interactive shells, edit this file manually
+#   and uncomment the following line with your preferred value.
+# export TZ="Etc/UTC"
+echo "[ENV-SETUP] Current TZ: ${TZ:-<not set>}"
 
 if [ -d "${CUDA_HOME:-}" ]; then
     alias LOAD_CUDA="env_load PATH $CUDA_HOME/bin && \

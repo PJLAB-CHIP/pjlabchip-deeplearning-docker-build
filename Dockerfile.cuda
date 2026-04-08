@@ -4,9 +4,7 @@ ARG UBUNTU_VERSION=24.04
 FROM nvidia/cuda:${CUDA_VERSION}-cudnn-devel-ubuntu${UBUNTU_VERSION}
 
 ARG DEBIAN_FRONTEND=noninteractive
-ENV LANGUAGE=en_US.UTF-8
-ENV LANG=en_US.UTF-8
-
+ARG TZ
 ARG LLVM_VERSION
 ARG IMAGE_VERSION
 ARG IMAGE_NAME
@@ -23,72 +21,18 @@ ENV UV_HOME=/opt/uv
 ENV CARGO_HOME=/usr/local/cargo
 ENV RUSTUP_HOME=/usr/local/rustup
 
-SHELL ["/bin/bash", "-c"]
-
-# Some basic tools
-RUN apt-get update && apt-get upgrade -y && \
-    apt-get install -y \
-    apt-utils lsb-release software-properties-common gnupg git acl sed \
-    vim-gtk3 wget p7zip-full ninja-build curl jq nodejs npm pkg-config ssh ccache \
-    build-essential gdb htop tmux kmod \
-    libssl-dev && \
-    echo "ttf-mscorefonts-installer msttcorefonts/accepted-mscorefonts-eula select true" \
-        | debconf-set-selections && \
-    apt-get --reinstall install -y ttf-mscorefonts-installer && fc-cache -f -v
-
-# Vcpkg
-RUN git clone https://github.com/microsoft/vcpkg.git ${VCPKG_HOME} && \ 
-    cd ${VCPKG_HOME} && ./bootstrap-vcpkg.sh 
-
-# CMake
-RUN wget -O /tmp/kitware-archive.sh \
-    https://apt.kitware.com/kitware-archive.sh && \
-    bash /tmp/kitware-archive.sh && \
-    apt-get update && apt-get install -y cmake 
-
-# LLVM
-RUN wget -O /tmp/llvm.sh https://apt.llvm.org/llvm.sh && \
-    chmod +x /tmp/llvm.sh && \
-    /tmp/llvm.sh ${LLVM_VERSION} && \
-    apt-get update && apt-get install -y \
-    clang-${LLVM_VERSION}         lldb-${LLVM_VERSION} \
-    clang-tools-${LLVM_VERSION}   libclang-${LLVM_VERSION}-dev \
-    clang-format-${LLVM_VERSION}  libomp-${LLVM_VERSION}-dev \
-    clangd-${LLVM_VERSION}        clang-tidy-${LLVM_VERSION} \
-    lldb-${LLVM_VERSION}          libc++-${LLVM_VERSION}-dev \
-    libc++abi-${LLVM_VERSION}-dev && \
-    ln -s /usr/bin/clang-${LLVM_VERSION}         /usr/bin/clang && \
-    ln -s /usr/bin/clang++-${LLVM_VERSION}       /usr/bin/clang++ && \
-    ln -s /usr/bin/clangd-${LLVM_VERSION}        /usr/bin/clangd && \
-    ln -s /usr/bin/clang-tidy-${LLVM_VERSION}    /usr/bin/clang-tidy && \
-    ln -s /usr/bin/clang-format-${LLVM_VERSION}  /usr/bin/clang-format && \
-    ln -s /usr/bin/lldb-${LLVM_VERSION}          /usr/bin/lldb 
-
-# Install Rust
-RUN curl https://sh.rustup.rs -sSf | sh -s -- -y
-
-# Install AI coding CLIs
-RUN npm install -g @openai/codex @anthropic-ai/claude-code \
-    && npm cache clean --force
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
 # Config files
+COPY data/install-common.sh /usr/local/bin/install-common.sh
 COPY data/vimrc.local /etc/vim/vimrc.local
 COPY data/env_setup.sh ${ENV_SETUP_FILE}
 COPY data/.inputrc data/.bashrc data/.tmux.conf data/.bash_profile /root/
 COPY data/.inputrc data/.bashrc data/.tmux.conf data/.bash_profile /etc/skel/
 
-# Install uv
-RUN curl -LsSf https://astral.sh/uv/install.sh | \
-        env UV_INSTALL_DIR="${UV_HOME}" UV_NO_MODIFY_PATH=1 sh
-
-# Some final steps
-RUN apt-get update && apt-get upgrade -y && \
-    apt-get autoremove -y && \
-    apt-get clean && rm -rf /var/lib/apt/lists/* && \
-    git config --system --unset-all user.name  || true && \
-    git config --system --unset-all user.email || true && \
-    git config --global --unset-all user.name  || true && \
-    git config --global --unset-all user.email || true
+RUN chmod +x /usr/local/bin/install-common.sh && \
+    /usr/local/bin/install-common.sh && \
+    rm -f /usr/local/bin/install-common.sh
 
 COPY data/entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh
