@@ -37,6 +37,9 @@ apt-get install -y --no-install-recommends \
     vim-gtk3 \
     wget \
     p7zip-full \
+    zip \
+    unzip \
+    tar \
     ninja-build \
     curl \
     jq \
