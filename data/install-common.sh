@@ -103,9 +103,6 @@ ln -sf "/usr/bin/lldb-${LLVM_VERSION}" /usr/bin/lldb
 
 curl https://sh.rustup.rs -sSf | sh -s -- -y
 
-npm install -g @openai/codex @anthropic-ai/claude-code
-npm cache clean --force
-
 curl -LsSf https://astral.sh/uv/install.sh | \
     env UV_INSTALL_DIR="${UV_HOME}" UV_NO_MODIFY_PATH=1 sh
 

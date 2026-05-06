@@ -21,7 +21,7 @@ Options:
   -c, --container-name <name>    Container name. Defaults to tmp.
   --tmp                          Run interactively and remove the container on exit.
   --proxy <url>                  Set http_proxy, https_proxy, and all_proxy.
-  --sys-admin                    Add SYS_ADMIN capability.
+  --sys-admin                    Add SYS_ADMIN capability and disable seccomp and apparmor.
   --gpus <value>                 Override GPU request, for example: all.
   --time-zone <tz>               Pass TZ into the container, for example: America/Los_Angeles, Asia/Shanghai.
   -h, --help                     Show this help message and exit.
@@ -109,7 +109,11 @@ else
 fi
 
 if [[ "${SYS_ADMIN}" == "true" ]]; then
-    SYS_ADMIN_ARGS=(--cap-add SYS_ADMIN)
+    SYS_ADMIN_ARGS=(
+        "--cap-add" "SYS_ADMIN"
+        "--security-opt" "seccomp=unconfined"
+        "--security-opt" "apparmor=unconfined"
+    )
 else
     SYS_ADMIN_ARGS=()
 fi

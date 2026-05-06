@@ -35,5 +35,11 @@ RUN chmod +x /usr/local/bin/install-common.sh && \
 
 COPY data/entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh
+
+COPY data/install-ai-cli.sh /usr/local/bin/install-ai-cli.sh
+RUN chmod +x /usr/local/bin/install-ai-cli.sh && \
+    /usr/local/bin/install-ai-cli.sh && \
+    rm -f /usr/local/bin/install-ai-cli.sh
+
 ENTRYPOINT [ "entrypoint.sh" ]
 CMD [ "bash" ]
