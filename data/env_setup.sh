@@ -1,0 +1,114 @@
+# @ https://patorjk.com/software/taag/?p=display&f=Varsity&t=PJLAB%2FDL&x=none
+sed "s|\${IMAGE_NAME}|${IMAGE_NAME}|g" << 'EOF'
+===============================================================================
+ _______    _____  _____          _       ______       __ ______   _____     
+|_   __ \  |_   _||_   _|        / \     |_   _ \     / /|_   _ `.|_   _|    
+  | |__) |   | |    | |         / _ \      | |_) |   / /   | | `. \ | |      
+  |  ___/_   | |    | |   _    / ___ \     |  __'.  / /    | |  | | | |   _  
+ _| |_  | |__' |   _| |__/ | _/ /   \ \_  _| |__) |/ /    _| |_.' /_| |__/ | 
+|_____| `.____.'  |________||____| |____||_______//_/    |______.'|________| 
+                                                                             
+-------------------------------------------------------------------------------
+Image Name:  ${IMAGE_NAME}
+Creator:     PJLAB-Chip <daixu@pjlab.org.cn>
+License:     MIT
+===============================================================================
+EOF
+
+FILE_DIR="$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
+FILE_NAME="$( basename -- "${BASH_SOURCE[0]}" )"
+FILE_PATH="$FILE_DIR/$FILE_NAME"
+
+echo "[ENV-SETUP] Sourcing ${FILE_PATH}"
+echo "            Current \${ENV_SETUP_FILE}: ${ENV_SETUP_FILE:-<not set>}"
+
+# @brief Add `$1` into environment variable `$2` if it is not already there.
+# @example > env_load PATH /usr/local/bin
+env_load() {
+    local var_name=$1
+    local new_path=$2
+    if [[ ":${!var_name}:" != *":$new_path:"* ]]; then
+        export "$var_name"="$new_path${!var_name:+":${!var_name}"}"
+    fi
+}
+
+# @brief Remove `$1` from environment variable `$2` if it is there.
+# @example > env_unload PATH /usr/local/bin
+env_unload() {
+    local var_name=$1
+    local target_path=$2
+    local paths_array=(${!var_name//:/ })
+    local new_paths=()
+    for item in "${paths_array[@]}"; do
+        if [[ "$item" != "$target_path" ]]; then
+            new_paths+=("$item")
+        fi
+    done
+    export $var_name=$(IFS=:; echo "${new_paths[*]}")
+}
+
+# Time zone:
+#   To set a default time zone for interactive shells, edit this file manually
+#   and uncomment the following line with your preferred value.
+# export TZ="Etc/UTC"
+echo "[ENV-SETUP] Current TZ: ${TZ:-<not set>}"
+
+if [ -d "${CUDA_HOME:-}" ]; then
+    alias LOAD_CUDA="env_load PATH $CUDA_HOME/bin && \
+        env_load LD_LIBRARY_PATH $CUDA_HOME/lib64"
+    alias UNLOAD_CUDA="env_unload PATH $CUDA_HOME/bin && \
+        env_unload LD_LIBRARY_PATH $CUDA_HOME/lib64"
+    env_load PATH "$CUDA_HOME/bin"
+    env_load LD_LIBRARY_PATH "$CUDA_HOME/lib64"
+    echo "[ENV-SETUP] CUDA initialized from $CUDA_HOME"
+else
+    unset CUDA_HOME
+fi
+
+if [ -d "${VCPKG_HOME:-}" ]; then
+    alias LOAD_VCPKG="env_load PATH $VCPKG_HOME"
+    alias UNLOAD_VCPKG="env_unload PATH $VCPKG_HOME"
+    alias VCPKG_UPDATE="pushd $VCPKG_HOME && git pull && popd"
+    # Load vcpkg by default
+    env_load PATH "$VCPKG_HOME"
+    echo "[ENV-SETUP] VCPKG initialized from $VCPKG_HOME"
+else
+    unset VCPKG_HOME
+fi
+
+if [ -d "${UV_HOME:-}" ]; then
+    alias LOAD_UV="env_load PATH $UV_HOME"
+    alias UNLOAD_UV="env_unload PATH $UV_HOME"
+    env_load PATH "$UV_HOME"
+    echo "[ENV-SETUP] UV initialized from $UV_HOME"
+    ## You can uncomment the following line to set a shared cache dir for UV.
+    # export UV_CACHE_DIR="$UV_HOME/.cache"
+    # export UV_PYTHON_INSTALL_DIR="$UV_HOME/python"
+    echo "            |- UV_CACHE_DIR: ${UV_CACHE_DIR:-<not set>}"
+    echo "            |- UV_PYTHON_INSTALL_DIR: ${UV_PYTHON_INSTALL_DIR:-<not set>}"
+else
+    unset UV_HOME
+fi
+
+if [ -d "${CARGO_HOME:-}" ] && [ -d "${RUSTUP_HOME:-}" ]; then
+    alias LOAD_RUST="env_load PATH $CARGO_HOME/bin"
+    alias UNLOAD_RUST="env_unload PATH $CARGO_HOME/bin"
+    # Load Rust by default
+    env_load PATH "$CARGO_HOME/bin"
+    echo "[ENV-SETUP] Rust initialized from $CARGO_HOME and $RUSTUP_HOME"
+else
+    unset CARGO_HOME
+    unset RUSTUP_HOME
+fi
+
+# Torch virtual environment (only present when the image is built with
+# INSTALL_TORCH=true; see data/install-torch.sh).
+if [ -x "${TORCH_HOME:-/opt/torch}/bin/python" ]; then
+    alias LOAD_TORCH="env_load PATH ${TORCH_HOME:-/opt/torch}/bin"
+    alias UNLOAD_TORCH="env_unload PATH ${TORCH_HOME:-/opt/torch}/bin"
+    # Load the torch venv by default
+    env_load PATH "${TORCH_HOME:-/opt/torch}/bin"
+    echo "[ENV-SETUP] Torch venv initialized from ${TORCH_HOME:-/opt/torch}"
+else
+    unset TORCH_HOME
+fi

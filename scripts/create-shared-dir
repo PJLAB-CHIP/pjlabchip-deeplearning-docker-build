@@ -1,0 +1,94 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+# ==============================================================================
+# Script: create-shared-dir
+# Description: Configures one or more directories to be shared with a specific group.
+#
+# It performs the following actions on each target directory:
+#   1. Creates the directory if it doesn't exist.
+#   2. Recursively sets the group ownership.
+#   3. Sets permissions (group: rwx, others: none).
+#   4. Sets the 'setgid' bit on subdirectories to enforce group inheritance.
+#   5. Uses Access Control Lists (ACLs) to enforce permissions for new items.
+#
+# Usage:
+#   sudo create-shared-dir <shared_group> <dir1> [<dir2> ...]
+#
+# Example:
+#   sudo create-shared-dir developers /srv/data /home/shared/project
+#
+# Host prerequisites:
+#   This script expects common admin tools to be available on the host:
+#   - coreutils / findutils: mkdir, chmod, chgrp, find
+#   - acl: setfacl for default and recursive ACL rules
+#   - libc-bin or equivalent: getent for group lookup
+#   On Ubuntu or Debian, install at least: `apt-get install acl`
+#
+# ==============================================================================
+
+print_help() {
+    cat <<'EOF'
+Usage: scripts/create-shared-dir <user_group> <dir1> [<dir2> ...]
+
+Create one or more shared directories for a Unix group.
+
+Options:
+  -h, --help            Show this help message and exit.
+EOF
+}
+
+# --- Input Validation ---
+if [[ $# -eq 0 ]]; then
+    print_help >&2
+    exit 1
+fi
+
+case "${1:-}" in
+    -h|--help)
+        print_help
+        exit 0
+        ;;
+esac
+
+if [ $# -lt 2 ]; then
+    echo "Error: Missing directory arguments." >&2
+    print_help >&2
+    exit 1
+fi
+
+# --- Argument Parsing ---
+USER_GROUP="$1"
+shift
+TARGET_DIRS=("$@")
+
+# --- Pre-flight Checks ---
+# 1. Check for root privileges.
+if [[ $EUID -ne 0 ]]; then
+    echo "Error: This script must be run as root (or with sudo)." >&2
+    exit 1
+fi
+
+# 2. Check if the specified group exists.
+if ! getent group "$USER_GROUP" > /dev/null; then
+    echo "Error: Group '$USER_GROUP' does not exist." >&2
+    exit 1
+fi
+
+# --- Main Logic ---
+echo "Configuring shared directories for group '$USER_GROUP'..."
+
+for target_dir in "${TARGET_DIRS[@]}"; do
+    echo "--> Processing: $target_dir"
+    mkdir -p "$target_dir"
+    chgrp -R "$USER_GROUP" "$target_dir"
+    chmod -R g=rwX,o-rwx "$target_dir"
+    find "$target_dir" -type d -exec chmod g+s {} +
+    setfacl -R -m "g:$USER_GROUP:rwX" "$target_dir"
+    setfacl -R -d -m "g:$USER_GROUP:rwX" "$target_dir"
+done
+
+echo "Configuration complete."
+echo "[NOTE] This script is once-off. You do not need to run it again for the same dirs."
+exit 0

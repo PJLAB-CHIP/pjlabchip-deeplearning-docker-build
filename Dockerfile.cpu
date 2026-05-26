@@ -1,93 +1,56 @@
 ARG CUDA_VERSION
-ARG UBUNTU_VERSION
+ARG UBUNTU_VERSION=24.04
 
-FROM ubuntu:24.04
+FROM ubuntu:${UBUNTU_VERSION}
 
 ARG DEBIAN_FRONTEND=noninteractive
-ENV LANGUAGE=en_US.UTF-8
-ENV LANG=en_US.UTF-8
-
-ARG INSTALL_TORCH
+ARG TZ
 ARG LLVM_VERSION
 ARG IMAGE_VERSION
+ARG IMAGE_NAME
+ARG INSTALL_TORCH=false
 ARG TORCH_VERSION
 
-LABEL maintainer="JamesNULLiu jamesnulliu@gmail.com"
+LABEL maintainer="PJLAB-Chip daixu@pjlab.org.cn"
 LABEL version=${IMAGE_VERSION}
 
-SHELL ["/bin/bash", "-c"]
+ENV IMAGE_NAME=${IMAGE_NAME}
+ENV ENV_SETUP_FILE=/etc/local/env_setup.sh
+ENV VCPKG_ROOT=/opt/vcpkg
+ENV VCPKG_HOME=/opt/vcpkg
+ENV UV_HOME=/opt/uv
+ENV CARGO_HOME=/usr/local/cargo
+ENV RUSTUP_HOME=/usr/local/rustup
+ENV TORCH_HOME=/opt/torch
 
-# Some basic tools
-RUN apt-get update && apt-get upgrade -y && \
-    apt-get install -y \
-    apt-utils lsb-release software-properties-common gnupg git \
-    vim-gtk3 wget p7zip-full ninja-build curl jq pkg-config ssh \
-    build-essential gdb htop tmux ttf-mscorefonts-installer kmod \
-    libssl-dev && \
-    fc-cache -f -v
-
-# Vcpkg
-RUN cd /usr/local && git clone https://github.com/microsoft/vcpkg.git && \ 
-    cd vcpkg && ./bootstrap-vcpkg.sh 
-
-# CMake
-RUN wget -O /tmp/kitware-archive.sh \
-    https://apt.kitware.com/kitware-archive.sh && \
-    bash /tmp/kitware-archive.sh && \
-    apt-get update && apt-get install -y cmake 
-
-# LLVM
-RUN wget -qO- https://apt.llvm.org/llvm-snapshot.gpg.key | \
-        tee /etc/apt/trusted.gpg.d/apt.llvm.org.asc && \
-    echo "deb http://apt.llvm.org/noble/ llvm-toolchain-noble main" | \
-        tee /etc/apt/sources.list.d/llvm.list && \
-    echo "deb-src http://apt.llvm.org/noble/ llvm-toolchain-noble main" | \
-        tee -a /etc/apt/sources.list.d/llvm.list && \
-    apt-get update && apt-get install -y \
-        clang-${LLVM_VERSION}         lldb-${LLVM_VERSION} \
-        clang-tools-${LLVM_VERSION}   libclang-${LLVM_VERSION}-dev \
-        clang-format-${LLVM_VERSION}  python3-clang-${LLVM_VERSION} \
-        clangd-${LLVM_VERSION}        clang-tidy-${LLVM_VERSION} \
-        lldb-${LLVM_VERSION}          libc++-${LLVM_VERSION}-dev \
-        libc++abi-${LLVM_VERSION}-dev libomp-${LLVM_VERSION}-dev && \
-    ln -s /usr/bin/clang-${LLVM_VERSION}         /usr/bin/clang && \
-    ln -s /usr/bin/clang++-${LLVM_VERSION}       /usr/bin/clang++ && \
-    ln -s /usr/bin/clangd-${LLVM_VERSION}        /usr/bin/clangd && \
-    ln -s /usr/bin/clang-tidy-${LLVM_VERSION}    /usr/bin/clang-tidy && \
-    ln -s /usr/bin/clang-format-${LLVM_VERSION}  /usr/bin/clang-format && \
-    ln -s /usr/bin/lldb-${LLVM_VERSION}          /usr/bin/lldb 
-
-# Rust
-RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
 # Config files
-COPY data/.vimrc data/.inputrc data/.bashrc data/.setup_env.sh data/.tmux.conf \
-    /root/
+COPY data/install-common.sh /usr/local/bin/install-common.sh
+COPY data/vimrc.local /etc/vim/vimrc.local
+COPY data/env_setup.sh ${ENV_SETUP_FILE}
+COPY data/.inputrc data/.bashrc data/.bash_profile data/.tmux.conf /root/
+COPY data/.inputrc data/.bashrc data/.bash_profile data/.tmux.conf /etc/skel/
 
-# Install Miniconda3 and conda env
-# [TODO] Conda now uses python=3.13 in default. However, some packages (i.e.,
-#        vllm) only support python<=3.12. That's why I install python=3.12 
-#        mannually here. Maybe some days later I will remove this command.
-RUN wget -O /tmp/miniconda3.sh \
-    https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh && \
-    mkdir -p /root/miniconda3 && \
-    bash /tmp/miniconda3.sh -b -u -p /root/miniconda3 && \
-    \. /root/miniconda3/bin/activate && \
-    conda upgrade libstdcxx-ng -c conda-forge -y && \
-    conda install -y python=3.12 && \
-    pip3 install nvitop --no-cache-dir && \
-    if [[ "${INSTALL_TORCH}" == "true" ]]; then \
-        TORCH_CU_VER=$(echo $CUDA_VERSION | cut -d'.' -f1,2 | tr -d '.') && \
-        pip3 install torch==${TORCH_VERSION} torchvision torchaudio \
-            --index-url https://download.pytorch.org/whl/cpu \
-            --no-cache-dir \
-    ; fi
+RUN chmod +x /usr/local/bin/install-common.sh && \
+    /usr/local/bin/install-common.sh && \
+    rm -f /usr/local/bin/install-common.sh
 
-# Some final steps
-RUN apt-get update && apt-get upgrade -y && apt-get autoremove -y && \
-    apt-get clean && rm -rf /var/lib/apt/lists/* && \
-    conda clean --all -y && pip cache purge && \
-    git config --system --unset-all user.name || true && \
-    git config --system --unset-all user.email || true && \
-    git config --global --unset-all user.name || true && \
-    git config --global --unset-all user.email || true
+COPY data/entrypoint.sh /usr/local/bin/entrypoint.sh
+RUN chmod +x /usr/local/bin/entrypoint.sh
+
+COPY data/install-ai-cli.sh /usr/local/bin/install-ai-cli.sh
+RUN chmod +x /usr/local/bin/install-ai-cli.sh && \
+    /usr/local/bin/install-ai-cli.sh && \
+    rm -f /usr/local/bin/install-ai-cli.sh
+
+COPY data/install-torch.sh /usr/local/bin/install-torch.sh
+RUN chmod +x /usr/local/bin/install-torch.sh && \
+    INSTALL_TORCH="${INSTALL_TORCH}" \
+    TORCH_VERSION="${TORCH_VERSION}" \
+    TORCH_INDEX_URL="https://download.pytorch.org/whl/cpu" \
+    /usr/local/bin/install-torch.sh && \
+    rm -f /usr/local/bin/install-torch.sh
+
+ENTRYPOINT [ "entrypoint.sh" ]
+CMD [ "bash" ]

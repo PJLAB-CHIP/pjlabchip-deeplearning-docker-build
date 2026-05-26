@@ -12,7 +12,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        dockerfile: ["Dockerfile.cuda", "Dockerfile.cpu"]
+        dockerfile: [
+          "Dockerfile.cuda",
+          "Dockerfile.cpu"
+        ]
         install_torch: [true, false]
 
     steps:
